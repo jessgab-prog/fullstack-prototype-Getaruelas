@@ -1,13 +1,17 @@
-body {
-    background-color: #f8f9fa;
-}
+/* Hide ALL pages by default */
+.page { display: none; }
 
-.alert-info {
-    background-color: #cfe9f3;
-    color: #2c3e50;
-}
+/* The router adds .active to whichever page should show */
+.page.active { display: block; }
 
-.btn-primary {
-    background: linear-gradient(90deg, #5f5fff, #4a54e1);
-    border: none;
-}
+/* When body has .not-authenticated, hide anything meant for logged-in users */
+body.not-authenticated .role-logged-in { display: none; }
+
+/* When body has .authenticated, hide the login/register links */
+body.authenticated .role-logged-out { display: none; }
+
+/* Admin links are always hidden by default */
+.role-admin { display: none; }
+
+/* Only show admin links when body has .is-admin */
+body.is-admin .role-admin { display: block; }

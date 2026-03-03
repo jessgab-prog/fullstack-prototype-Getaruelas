@@ -1,79 +1,141 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    
-    <!-- Viewport Meta Tag ni-->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <title>Full-Stack App (Student Build)</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Full-Stack App (Student Build_Getaruelas)</title>
 
-    <!-- Bootstrap 5 CSS CDN  -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" 
-          rel="stylesheet">
+  <!-- Bootstrap CSS from CDN — gives us pre-built components and grid -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
 
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="style.css">
+  <!-- CSS, loaded AFTER Bootstrap so we can override it -->
+  <link rel="stylesheet" href="style.css" />
 </head>
-<body>
+<body class="not-authenticated">
 
-<!-- nav bar -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <div class="container">
+  <nav class="navbar navbar-dark bg-dark px-3">
 
-    <a class="navbar-brand" href="#">
-      Full-Stack App
-    </a>
+    <a class="navbar-brand" href="#/">Full-Stack App (Getaruelas, Jess)</a>
+    <div class="ms-auto d-flex align-items-center gap-2">
+      <!-- LOGGED-OUT links: only visible when NOT logged in -->
+    <a class="nav-link text-white role-logged-out" href="#" onclick="navigateTo('#/login')">Login</a>
+    <a class="nav-link text-white role-logged-out" href="#" onclick="navigateTo('#/register')">Register</a>
 
-    <button class="navbar-toggler" type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#navbarNav">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-
-    <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-      <ul class="navbar-nav" id="authSection">
-        <!-- JS controls this -->
-      </ul>
-    </div>
-
-  </div>
-</nav>
-
-    <!-- Home Section -->
-<div class="container mt-5" id="mainContent">
-    <!-- JS will replace this content -->
-</div>
-
-<!-- Profile Section -->
-<div id="profileSection" class="mt-5 d-none">
-
-  <h4 class="fw-bold mb-3">My Profile</h4>
-
-  <div class="card shadow-sm">
-    <div class="card-body">
-
-      <h5 id="profileName" class="fw-bold"></h5>
-      <p class="mb-1">
-        <strong>Email:</strong> <span id="profileEmail"></span>
-      </p>
-      <p>
-        <strong>Role:</strong> <span id="profileRole"></span>
-      </p>
-
-      <button class="btn btn-outline-primary btn-sm"
-              onclick="editProfile()">
-        Edit Profile
+      <div class="dropdown role-logged-in">
+        <button class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown" id="nav-username">
+        User
       </button>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li><a class="dropdown-item" href="#" onclick="navigateTo('#/profile')">Profile</a></li>
 
+        <!-- ADMIN-ONLY links -->
+        <li class="role-admin"><a class="dropdown-item" href="#" onclick="navigateTo('#/employees')">Employees</a></li>
+        <li class="role-admin"><a class="dropdown-item" href="#" onclick="navigateTo('#/accounts')">Accounts</a></li>
+        <li class="role-admin"><a class="dropdown-item" href="#" onclick="navigateTo('#/departments')">Departments</a></li>
+
+        <li><a class="dropdown-item" href="#" onclick="navigateTo('#/requests')">My Requests</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item text-danger" href="#" onclick="doLogout()">Logout</a></li>
+      </ul>
+      </div>
     </div>
-  </div>
+  </nav>
+  <!-- Page content ari -->
 
-</div>
-    <!-- Bootstrap 5 JS Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Custom JS -->
-    <script src="script.js"></script>
+  <main class="container py-4">
+
+    <!--home-->
+    <section id="home-page" class="page">
+      <h1>Welcome to Full-Stack App</h1>
+      <p>A static prototype before backend integration. Simulates:</p>
+      <ul>
+        <li>Email registration + fake verification</li>
+        <li>Login with JWT-like token simulation</li>
+        <li>Role-based UI (Admin/User)</li>
+        <li>CRUD for Employees, Departments, Requests</li>
+      </ul>
+      <div class="alert alert-info">
+       ⚠️ <strong>Note:</strong> All data is stored in <code>localStorage</code>. Refresh to reset.
+    </div>
+    <button class="btn btn-primary" onclick="navigateTo('#/register')">Get Started →</button>
+  </section>
+<!-- REGISTER -->
+  <section id="register-page" class="page">
+    <h2>Register Account</h2>
+    <div style="max-width:460px">
+      <div class="mb-3"><label class="form-label">First Name</label><input id="reg-first" type="text" class="form-control"></div>
+      <div class="mb-3"><label class="form-label">Last Name</label><input id="reg-last" type="text" class="form-control"></div>
+      <div class="mb-3"><label class="form-label">Email</label><input id="reg-email" type="email" class="form-control"></div>
+      <div class="mb-3"><label class="form-label">Password</label><input id="reg-password" type="password" class="form-control"></div>
+      <button class="btn btn-primary me-2" onclick="doRegister()">Sign Up</button>
+      <button class="btn btn-secondary" onclick="navigateTo('#/')">Cancel</button>
+    </div>
+  </section>
+
+  <!-- VERIFY EMAIL -->
+  <section id="verify-email-page" class="page">
+    <h2>Verify Your Email</h2>
+    <div id="verify-msg" class="alert alert-success"></div>
+    <p>For demo purposes, click below to simulate verification:</p>
+    <button class="btn btn-success me-2" onclick="doVerify()">✅ Simulate Email Verification</button>
+    <button class="btn btn-outline-secondary" onclick="navigateTo('#/login')">Go to Login</button>
+  </section>
+
+  <!-- LOGIN -->
+  <section id="login-page" class="page">
+    <div id="login-verified-msg" class="alert alert-success d-none">✅ Email verified! You may now log in.</div>
+    <h2>Login</h2>
+    <div style="max-width:380px">
+      <div class="mb-3"><label class="form-label">Email</label><input id="login-email" type="email" class="form-control"></div>
+      <div class="mb-3"><label class="form-label">Password</label><input id="login-password" type="password" class="form-control"></div>
+      <div id="login-error" class="alert alert-danger d-none"></div>
+      <button class="btn btn-primary me-2" onclick="doLogin()">Login</button>
+      <button class="btn btn-outline-secondary" onclick="navigateTo('#/')">Cancel</button>
+    </div>
+  </section>
+
+  <!-- PROFILE -->
+  <section id="profile-page" class="page">
+    <h2>My Profile</h2>
+    <div class="card" style="max-width:480px">
+      <div class="card-body">
+        <h5 id="profile-name"></h5>
+        <p><strong>Email:</strong> <span id="profile-email"></span></p>
+        <p><strong>Role:</strong> <span id="profile-role"></span></p>
+        <button class="btn btn-sm btn-outline-primary" onclick="alert('Edit profile — coming soon!')">Edit Profile</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- EMPLOYEES (admin only) -->
+  <section id="employees-page" class="page">
+    <h2>Employees</h2>
+    <p class="text-muted">Admin content — coming in Phase 6</p>
+  </section>
+
+  <!-- DEPARTMENTS (admin only) -->
+  <section id="departments-page" class="page">
+    <h2>Departments</h2>
+    <p class="text-muted">Admin content — coming in Phase 6</p>
+  </section>
+
+  <!-- ACCOUNTS (admin only) -->
+  <section id="accounts-page" class="page">
+    <h2>Accounts</h2>
+    <p class="text-muted">Admin content — coming in Phase 6</p>
+  </section>
+
+  <!-- REQUESTS -->
+  <section id="requests-page" class="page">
+    <h2>My Requests</h2>
+    <p class="text-muted">Coming in Phase 7</p>
+  </section>
+
+</main>
+  <!-- Bootstrap JS (needed for dropdowns, modals) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- JS, loaded LAST so HTML exists before our code runs -->
+  <script src="script.js"></script>
 </body>
 </html>
