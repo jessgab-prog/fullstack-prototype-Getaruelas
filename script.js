@@ -279,8 +279,19 @@ function doLogout() {
   navigateTo('#/');
 }
 
-function renderProfile()   { /* Phase 5 */ }
-function renderEmployees() { /* Phase 6 */ }
+function renderProfile() {//Phase 5
+  // Safety check — should never be null here because the
+  // router blocks unauthenticated users, but good practice
+  if (!currentUser) return;
+
+  // Grab the profile elements and fill them with the current user's data
+  document.getElementById('profile-name').textContent =
+    currentUser.firstName + ' ' + currentUser.lastName;
+
+  document.getElementById('profile-email').textContent = currentUser.email;
+
+  document.getElementById('profile-role').textContent = currentUser.role;
+}
 function renderDepts()     { /* Phase 6 */ }
 function renderAccounts()  { /* Phase 6 */ }
 function renderRequests()  { /* Phase 7 */ }
