@@ -15,3 +15,28 @@ body.authenticated .role-logged-out { display: none; }
 
 /* Only show admin links when body has .is-admin */
 body.is-admin .role-admin { display: block; }
+
+#toast-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+}
+
+.toast-msg {
+  padding: .55rem 1.1rem;
+  border-radius: .4rem;
+  color: #fff;
+  font-size: .88rem;
+  opacity: 1;
+  transition: opacity .4s;
+  box-shadow: 0 2px 8px rgba(0,0,0,.22);
+}
+
+.toast-msg.success { background: #198754; }
+.toast-msg.danger  { background: #dc3545; }
+.toast-msg.warning { background: #ffc107; color: #000; }
+.toast-msg.info    { background: #0dcaf0; color: #000; }

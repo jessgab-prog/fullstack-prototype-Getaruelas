@@ -1,4 +1,63 @@
-// The currently logged-in user. null means nobody is logged in.
+//Phase 4
+// The key we use to store everything in localStorage
+const STORAGE_KEY = 'ipt_demo_v1';
+
+
+// ── loadFromStorage ──────────────────────────────────
+// Runs once on startup. Loads saved data from localStorage into window.db.
+// If nothing is saved yet (first visit), seeds the database with default data.
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+
+    if (raw) {
+      // Data exists — parse and use it
+      window.db = JSON.parse(raw);
+    } else {
+      // First visit — no data yet, seed with defaults
+      seedDb();
+    }
+  } catch (e) {
+    // JSON.parse failed — data is corrupted, start fresh
+    seedDb();
+  }
+}
+
+
+// ── seedDb ───────────────────────────────────────────
+// Creates the default starting data.
+// Called only when localStorage is empty or corrupted.
+function seedDb() {
+  window.db = {
+    accounts: [
+      {
+        id:        1,
+        firstName: 'Admin',
+        lastName:  'User',
+        email:     'admin@example.com',
+        password:  'Password123!',
+        role:      'Admin',
+        verified:  true        // admin can log in immediately, no verification needed
+      }
+    ],
+    departments: [
+      { id: 1, name: 'Engineering', description: 'Software team' },
+      { id: 2, name: 'HR',          description: 'Human Resources' }
+    ],
+    employees: [],
+    requests:  []
+  };
+
+  saveToStorage();
+}
+
+
+// ── saveToStorage ────────────────────────────────────
+// Call this after ANY change to window.db to persist the data.
+// Converts the object to a JSON string and saves it.
+function saveToStorage() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(window.db));
+}
 let currentUser = null;
 
 // These routes require the user to be logged in
@@ -226,11 +285,22 @@ function renderDepts()     { /* Phase 6 */ }
 function renderAccounts()  { /* Phase 6 */ }
 function renderRequests()  { /* Phase 7 */ }
 
-// Placeholder toast so the access denied message doesn't crash
-function showToast(message, type) {
-  alert(type.toUpperCase() + ': ' + message);
-}
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toast-container');
+  
+  // Create the toast element
+  const el = document.createElement('div');
+  el.className = 'toast-msg ' + type;
+  el.textContent = message;
 
+  container.appendChild(el);
+
+  // Auto-remove after 2.5 seconds with a fade
+  setTimeout(() => {
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 400);
+  }, 2500);
+}
 
 // ── Init 
 // This runs once when the page first loads.
