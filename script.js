@@ -69,21 +69,162 @@ function handleRouting() {
 // Fire handleRouting every time the hash changes
 window.addEventListener('hashchange', handleRouting);
 
+function doRegister() {
+  // Grab values from the form
+  const first = document.getElementById('reg-first').value.trim();
+  const last  = document.getElementById('reg-last').value.trim();
+  const email = document.getElementById('reg-email').value.trim().toLowerCase();
+  const pw    = document.getElementById('reg-password').value;
+
+  // Validate — all fields must be filled, password min 6 chars
+  if (!first || !last || !email || !pw) {
+    showToast('All fields are required.', 'danger');
+    return;
+  }
+  if (pw.length < 6) {
+    showToast('Password must be at least 6 characters.', 'danger');
+    return;
+  }
+
+  // Check if email is already taken
+  if (window.db.accounts.find(a => a.email === email)) {
+    showToast('That email is already registered.', 'danger');
+    return;
+  }
+
+  // Build the new account object and save it
+  const newAccount = {
+    id:        Date.now(),   // simple unique ID using timestamp
+    firstName: first,
+    lastName:  last,
+    email:     email,
+    password:  pw,
+    role:      'User',       // all new registrations are regular users
+    verified:  false         // must verify email before logging in
+  };
+
+  window.db.accounts.push(newAccount);
+  saveToStorage();
+
+  // Store the email so the verify page knows who to verify
+  localStorage.setItem('unverified_email', email);
+
+  // Send them to the verify page
+  navigateTo('#/verify-email');
+}
 
 // ── Placeholder render functions 
 // These are empty for now. We'll fill them in later phases.
 // They need to exist so handleRouting doesn't crash when it calls them.
 
-function renderVerify()    { /* Phase 3 */ }
-function renderLogin()     { /* Phase 3 */ }
+function renderVerify() { //Phase 3
+  // Read the email we stored during registration
+  const email = localStorage.getItem('unverified_email') || '';
+
+  // Show it on the page so the user knows where the "email" was sent
+  document.getElementById('verify-msg').textContent =
+    'A verification link has been sent to ' + email + '.';
+}
+function doVerify() {
+  const email = localStorage.getItem('unverified_email');
+
+  // Find the account and flip verified to true
+  const acc = window.db.accounts.find(a => a.email === email);
+  if (acc) {
+    acc.verified = true;
+    saveToStorage();
+  }
+
+  // Clean up — we no longer need this stored email
+  localStorage.removeItem('unverified_email');
+
+  showToast('Email verified! You can now log in.', 'success');
+
+  // Show the green banner on the login page
+  document.getElementById('login-verified-msg').classList.remove('d-none');
+
+  navigateTo('#/login');
+}
+
+function renderLogin() {
+  // Hide the error message whenever we land on the login page fresh
+  document.getElementById('login-error').classList.add('d-none');
+}
+function doLogin() {
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  const pw    = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+
+  // Find account where email AND password match AND is verified
+  const acc = window.db.accounts.find(
+    a => a.email === email && a.password === pw && a.verified === true
+  );
+
+  // If nothing found, show error and stop
+  if (!acc) {
+    errEl.textContent = 'Invalid credentials, or email not verified.';
+    errEl.classList.remove('d-none');
+    return;
+  }
+
+  // Hide any previous error
+  errEl.classList.add('d-none');
+
+  // Save a token — in a real app this would be a JWT from the server
+  // Here we just store the email to remember who is logged in
+  localStorage.setItem('auth_token', email);
+
+  // Update the app state and UI
+  setAuthState(true, acc);
+
+  // Send them to their profile
+  navigateTo('#/profile');
+}
+function setAuthState(isAuth, user) {
+  currentUser = isAuth ? user : null;
+
+  const body = document.body;
+
+  if (isAuth) {
+    // Swap body classes — CSS does the rest automatically
+    body.classList.remove('not-authenticated');
+    body.classList.add('authenticated');
+
+    // Add is-admin class if user is an admin
+    if (user.role === 'Admin') {
+      body.classList.add('is-admin');
+    } else {
+      body.classList.remove('is-admin');
+    }
+
+    // Update the navbar dropdown button with the user's real name
+    document.getElementById('nav-username').textContent =
+      user.firstName + ' ' + user.lastName;
+
+  } else {
+    // Logging out — reset everything
+    body.classList.remove('authenticated', 'is-admin');
+    body.classList.add('not-authenticated');
+  }
+}
+// Placeholder so the navbar Logout link doesn't crash yet
+function doLogout() {
+  // Remove the stored token
+  localStorage.removeItem('auth_token');
+
+  // Reset the UI back to logged-out state
+  setAuthState(false);
+
+  showToast('Logged out successfully.', 'info');
+
+  navigateTo('#/');
+}
+
 function renderProfile()   { /* Phase 5 */ }
 function renderEmployees() { /* Phase 6 */ }
 function renderDepts()     { /* Phase 6 */ }
 function renderAccounts()  { /* Phase 6 */ }
 function renderRequests()  { /* Phase 7 */ }
-
-// Placeholder so the navbar Logout link doesn't crash yet
-function doLogout() { /* Phase 3 */ }
 
 // Placeholder toast so the access denied message doesn't crash
 function showToast(message, type) {
@@ -94,9 +235,19 @@ function showToast(message, type) {
 // ── Init 
 // This runs once when the page first loads.
 (function init() {
-  // If URL has no hash at all, default to home
-  if (!window.location.hash) navigateTo('#/');
+  loadFromStorage(); // Phase 4 — loads window.db from localStorage
 
-  // Show the correct page for the current URL
+  // Check if a token exists from a previous session
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    // Find the matching account
+    const user = window.db.accounts.find(a => a.email === token);
+    if (user) {
+      // Restore their logged-in state silently
+      setAuthState(true, user);
+    }
+  }
+
+  if (!window.location.hash) navigateTo('#/');
   handleRouting();
 })();
