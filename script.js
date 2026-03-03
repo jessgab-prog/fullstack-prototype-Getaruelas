@@ -184,6 +184,7 @@ function renderVerify() { //Phase 3
   document.getElementById('verify-msg').textContent =
     'A verification link has been sent to ' + email + '.';
 }
+
 function doVerify() {
   const email = localStorage.getItem('unverified_email');
 
@@ -194,20 +195,29 @@ function doVerify() {
     saveToStorage();
   }
 
-  // Clean up — we no longer need this stored email
+  // Clean up the unverified email
   localStorage.removeItem('unverified_email');
+
+  // Set the flag BEFORE navigating so renderLogin can read it
+  localStorage.setItem('just_verified', 'true');
 
   showToast('Email verified! You can now log in.', 'success');
 
-  // Show the green banner on the login page
-  document.getElementById('login-verified-msg').classList.remove('d-none');
-
+  // Navigate once, at the end
   navigateTo('#/login');
 }
 
 function renderLogin() {
-  // Hide the error message whenever we land on the login page fresh
   document.getElementById('login-error').classList.add('d-none');
+
+  // Show verified banner only if we just came from verification
+  const justVerified = localStorage.getItem('just_verified');
+  if (justVerified) {
+    document.getElementById('login-verified-msg').classList.remove('d-none');
+    localStorage.removeItem('just_verified'); // clean up immediately
+  } else {
+    document.getElementById('login-verified-msg').classList.add('d-none');
+  }
 }
 function doLogin() {
   const email = document.getElementById('login-email').value.trim().toLowerCase();
@@ -292,8 +302,336 @@ function renderProfile() {//Phase 5
 
   document.getElementById('profile-role').textContent = currentUser.role;
 }
-function renderDepts()     { /* Phase 6 */ }
-function renderAccounts()  { /* Phase 6 */ }
+
+function renderEmployees() {//Phase 6 [partC
+  const tbody = document.getElementById('employees-tbody');
+  tbody.innerHTML = '';
+
+  if (!window.db.employees.length) {
+    // Show a message if there are no employees yet
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No employees yet.</td></tr>';
+  }
+
+  window.db.employees.forEach((e, i) => {
+    // Look up the department name using the stored deptId
+    const dept = window.db.departments.find(d => d.id === e.deptId);
+
+    tbody.innerHTML += `
+      <tr>
+        <td>${e.employeeId}</td>
+        <td>${e.userEmail}</td>
+        <td>${e.position}</td>
+        <td>${dept ? dept.name : 'N/A'}</td>
+        <td>${e.hireDate}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-primary me-1" onclick="editEmployee(${i})">Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteEmployee(${i})">Delete</button>
+        </td>
+      </tr>`;
+  });
+
+  // Populate the department dropdown with current departments
+  populateDeptDropdown();
+}
+
+function populateDeptDropdown() {
+  const sel = document.getElementById('emp-dept');
+  sel.innerHTML = '';
+
+  window.db.departments.forEach(d => {
+    sel.innerHTML += `<option value="${d.id}">${d.name}</option>`;
+  });
+}
+
+function showEmployeeForm() {
+  populateDeptDropdown(); // always refresh dropdown before showing
+  document.getElementById('employee-form-wrap').classList.remove('d-none');
+}
+
+function hideEmployeeForm() {
+  document.getElementById('employee-form-wrap').classList.add('d-none');
+  document.getElementById('emp-id').value       = '';
+  document.getElementById('emp-email').value    = '';
+  document.getElementById('emp-position').value = '';
+  document.getElementById('emp-hire').value     = '';
+  document.getElementById('emp-edit-idx').value = '';
+}
+
+function editEmployee(idx) {
+  const e = window.db.employees[idx];
+  document.getElementById('emp-id').value       = e.employeeId;
+  document.getElementById('emp-email').value    = e.userEmail;
+  document.getElementById('emp-position').value = e.position;
+  document.getElementById('emp-hire').value     = e.hireDate;
+  document.getElementById('emp-edit-idx').value = idx;
+
+  // Refresh dropdown then set the correct selected department
+  populateDeptDropdown();
+  document.getElementById('emp-dept').value = e.deptId;
+
+  showEmployeeForm();
+}
+
+function saveEmployee() {
+  const empId    = document.getElementById('emp-id').value.trim();
+  const email    = document.getElementById('emp-email').value.trim().toLowerCase();
+  const position = document.getElementById('emp-position').value.trim();
+  const deptId   = parseInt(document.getElementById('emp-dept').value);
+  const hireDate = document.getElementById('emp-hire').value;
+  const editIdx  = document.getElementById('emp-edit-idx').value;
+
+  // Validate required fields
+  if (!empId || !email || !position) {
+    showToast('ID, email and position are required.', 'danger');
+    return;
+  }
+
+  // Make sure the email belongs to an existing account
+  const matchingAccount = window.db.accounts.find(a => a.email === email);
+  if (!matchingAccount) {
+    showToast('No account found for that email. Create an account first.', 'danger');
+    return;
+  }
+
+  if (editIdx !== '') {
+    // EDIT MODE
+    const e = window.db.employees[editIdx];
+    e.employeeId = empId;
+    e.userEmail  = email;
+    e.position   = position;
+    e.deptId     = deptId;
+    e.hireDate   = hireDate;
+  } else {
+    // ADD MODE
+    window.db.employees.push({
+      id:         Date.now(),
+      employeeId: empId,
+      userEmail:  email,
+      position:   position,
+      deptId:     deptId,   // store the dept ID, not the name
+      hireDate:   hireDate
+    });
+  }
+
+  saveToStorage();
+  hideEmployeeForm();
+  renderEmployees();
+  showToast('Employee saved.', 'success');
+}
+
+function deleteEmployee(idx) {
+  if (!confirm('Delete this employee record?')) return;
+
+  window.db.employees.splice(idx, 1);
+  saveToStorage();
+  renderEmployees();
+  showToast('Employee deleted.', 'success');
+}
+
+function renderDepts() {//Phase 6 partB
+  const tbody = document.getElementById('depts-tbody');
+  tbody.innerHTML = ''; // clear existing rows first
+
+  window.db.departments.forEach((d, i) => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${d.name}</td>
+        <td>${d.description}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-primary me-1" onclick="editDept(${i})">Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteDept(${i})">Delete</button>
+        </td>
+      </tr>`;
+  });
+}
+
+function showDeptForm() {
+  document.getElementById('dept-form-wrap').classList.remove('d-none');
+}
+
+function hideDeptForm() {
+  document.getElementById('dept-form-wrap').classList.add('d-none');
+  document.getElementById('dept-name').value     = '';
+  document.getElementById('dept-desc').value     = '';
+  document.getElementById('dept-edit-idx').value = '';
+}
+
+function editDept(idx) {
+  const d = window.db.departments[idx];
+  document.getElementById('dept-name').value     = d.name;
+  document.getElementById('dept-desc').value     = d.description;
+  document.getElementById('dept-edit-idx').value = idx;
+  showDeptForm();
+}
+
+function saveDept() {
+  const name    = document.getElementById('dept-name').value.trim();
+  const desc    = document.getElementById('dept-desc').value.trim();
+  const editIdx = document.getElementById('dept-edit-idx').value;
+
+  // Name is required, description is optional
+  if (!name) {
+    showToast('Department name is required.', 'danger');
+    return;
+  }
+
+  if (editIdx !== '') {
+    // EDIT MODE — update existing department
+    window.db.departments[editIdx].name        = name;
+    window.db.departments[editIdx].description = desc;
+  } else {
+    // ADD MODE — create new department
+    window.db.departments.push({
+      id:          Date.now(),
+      name:        name,
+      description: desc
+    });
+  }
+
+  saveToStorage();
+  hideDeptForm();
+  renderDepts();
+  showToast('Department saved.', 'success');
+}
+
+function deleteDept(idx) {
+  const d = window.db.departments[idx];
+
+  if (!confirm('Delete department "' + d.name + '"?')) return;
+
+  window.db.departments.splice(idx, 1);
+  saveToStorage();
+  renderDepts();
+  showToast('Department deleted.', 'success');
+}
+
+function renderAccounts() {//Phase 6 partA
+  const tbody = document.getElementById('accounts-tbody');
+  tbody.innerHTML = ''; // clear existing rows first
+
+  window.db.accounts.forEach((a, i) => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${a.firstName} ${a.lastName}</td>
+        <td>${a.email}</td>
+        <td>${a.role}</td>
+        <td>${a.verified ? '✅' : '❌'}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-primary me-1" onclick="editAccount(${i})">Edit</button>
+          <button class="btn btn-sm btn-warning me-1" onclick="resetPassword(${i})">Reset Password</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteAccount(${i})">Delete</button>
+        </td>
+      </tr>`;
+  });
+}
+
+function showAccountForm() {
+  document.getElementById('account-form-wrap').classList.remove('d-none');
+}
+
+function hideAccountForm() {
+  // Hide the form and clear all fields
+  document.getElementById('account-form-wrap').classList.add('d-none');
+  document.getElementById('acc-first').value    = '';
+  document.getElementById('acc-last').value     = '';
+  document.getElementById('acc-email').value    = '';
+  document.getElementById('acc-password').value = '';
+  document.getElementById('acc-role').value     = 'User';
+  document.getElementById('acc-verified').checked = false;
+  document.getElementById('acc-edit-idx').value = '';
+}
+
+function editAccount(idx) {
+  // Pre-fill the form with the existing account's data
+  const a = window.db.accounts[idx];
+  document.getElementById('acc-first').value       = a.firstName;
+  document.getElementById('acc-last').value        = a.lastName;
+  document.getElementById('acc-email').value       = a.email;
+  document.getElementById('acc-role').value        = a.role;
+  document.getElementById('acc-verified').checked  = a.verified;
+  document.getElementById('acc-edit-idx').value    = idx; // remember which index we're editing
+  showAccountForm();
+}
+
+function saveAccount() {
+  const first    = document.getElementById('acc-first').value.trim();
+  const last     = document.getElementById('acc-last').value.trim();
+  const email    = document.getElementById('acc-email').value.trim().toLowerCase();
+  const pw       = document.getElementById('acc-password').value;
+  const role     = document.getElementById('acc-role').value;
+  const verified = document.getElementById('acc-verified').checked;
+  const editIdx  = document.getElementById('acc-edit-idx').value;
+
+  // Basic validation
+  if (!first || !last || !email) {
+    showToast('Name and email are required.', 'danger');
+    return;
+  }
+
+  if (editIdx !== '') {
+    // EDIT MODE — update the existing account
+    const a = window.db.accounts[editIdx];
+    a.firstName = first;
+    a.lastName  = last;
+    a.email     = email;
+    a.role      = role;
+    a.verified  = verified;
+    if (pw) a.password = pw; // only update password if a new one was typed
+  } else {
+    // ADD MODE — create a new account
+    if (!pw || pw.length < 6) {
+      showToast('Password is required and must be at least 6 chars.', 'danger');
+      return;
+    }
+    if (window.db.accounts.find(a => a.email === email)) {
+      showToast('That email already exists.', 'danger');
+      return;
+    }
+    window.db.accounts.push({
+      id: Date.now(),
+      firstName: first,
+      lastName:  last,
+      email:     email,
+      password:  pw,
+      role:      role,
+      verified:  verified
+    });
+  }
+
+  saveToStorage();
+  hideAccountForm();
+  renderAccounts();
+  showToast('Account saved.', 'success');
+}
+
+function resetPassword(idx) {
+  const pw = prompt('Enter new password (min 6 chars):');
+  if (!pw || pw.length < 6) {
+    showToast('Password must be at least 6 characters.', 'danger');
+    return;
+  }
+  window.db.accounts[idx].password = pw;
+  saveToStorage();
+  showToast('Password reset successfully.', 'success');
+}
+
+function deleteAccount(idx) {
+  const a = window.db.accounts[idx];
+
+  // Prevent admin from deleting themselves
+  if (currentUser && a.email === currentUser.email) {
+    showToast('You cannot delete your own account.', 'danger');
+    return;
+  }
+
+  if (!confirm('Delete account for ' + a.email + '?')) return;
+
+  window.db.accounts.splice(idx, 1);
+  saveToStorage();
+  renderAccounts();
+  showToast('Account deleted.', 'success');
+}
+
 function renderRequests()  { /* Phase 7 */ }
 
 function showToast(message, type = 'info') {

@@ -18,24 +18,21 @@
     <a class="navbar-brand" href="#/">Full-Stack App (Getaruelas, Jess)</a>
     <div class="ms-auto d-flex align-items-center gap-2">
       <!-- LOGGED-OUT links: only visible when NOT logged in -->
-    <a class="nav-link text-white role-logged-out" href="#" onclick="navigateTo('#/login')">Login</a>
-    <a class="nav-link text-white role-logged-out" href="#" onclick="navigateTo('#/register')">Register</a>
+    <a class="nav-link text-white role-logged-out" href="javascript:void(0)" onclick="navigateTo('#/login')">Login</a>
+    <a class="nav-link text-white role-logged-out" href="javascript:void(0)" onclick="navigateTo('#/register')">Register</a>
 
       <div class="dropdown role-logged-in">
         <button class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown" id="nav-username">
         User
       </button>
       <ul class="dropdown-menu dropdown-menu-end">
-        <li><a class="dropdown-item" href="#" onclick="navigateTo('#/profile')">Profile</a></li>
-
         <!-- ADMIN-ONLY links -->
-        <li class="role-admin"><a class="dropdown-item" href="#" onclick="navigateTo('#/employees')">Employees</a></li>
-        <li class="role-admin"><a class="dropdown-item" href="#" onclick="navigateTo('#/accounts')">Accounts</a></li>
-        <li class="role-admin"><a class="dropdown-item" href="#" onclick="navigateTo('#/departments')">Departments</a></li>
-
-        <li><a class="dropdown-item" href="#" onclick="navigateTo('#/requests')">My Requests</a></li>
-        <li><hr class="dropdown-divider"></li>
-        <li><a class="dropdown-item text-danger" href="#" onclick="doLogout()">Logout</a></li>
+        <li><a class="dropdown-item" href="javascript:void(0)" onclick="navigateTo('#/profile')">Profile</a></li>
+        <li class="role-admin"><a class="dropdown-item" href="javascript:void(0)" onclick="navigateTo('#/employees')">Employees</a></li>
+        <li class="role-admin"><a class="dropdown-item" href="javascript:void(0)" onclick="navigateTo('#/accounts')">Accounts</a></li>
+        <li class="role-admin"><a class="dropdown-item" href="javascript:void(0)" onclick="navigateTo('#/departments')">Departments</a></li>
+        <li><a class="dropdown-item" href="javascript:void(0)" onclick="navigateTo('#/requests')">My Requests</a></li>
+        <li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="doLogout()">Logout</a></li>
       </ul>
       </div>
     </div>
@@ -108,22 +105,126 @@
   </section>
 
   <!-- EMPLOYEES (admin only) -->
-  <section id="employees-page" class="page">
+<section id="employees-page" class="page">
+  <div class="d-flex justify-content-between align-items-center mb-3">
     <h2>Employees</h2>
-    <p class="text-muted">Admin content — coming in Phase 6</p>
-  </section>
+    <button class="btn btn-success btn-sm" onclick="showEmployeeForm()">+ Add Employee</button>
+  </div>
+
+  <!-- Table showing all employees -->
+  <table class="table table-bordered table-sm">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Email</th>
+        <th>Position</th>
+        <th>Dept</th>
+        <th>Hire Date</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="employees-tbody"></tbody>
+  </table>
+
+  <!-- Add/Edit form — hidden by default -->
+  <div id="employee-form-wrap" class="card mt-3 d-none" style="max-width:520px">
+    <div class="card-header">Add/Edit Employee</div>
+    <div class="card-body">
+      <input type="hidden" id="emp-edit-idx" value="">
+      <div class="mb-2"><label class="form-label">Employee ID</label><input id="emp-id" type="text" class="form-control"></div>
+      <div class="mb-2"><label class="form-label">User Email</label><input id="emp-email" type="email" class="form-control"></div>
+      <div class="mb-2"><label class="form-label">Position</label><input id="emp-position" type="text" class="form-control"></div>
+
+      <!-- Department dropdown — populated dynamically from window.db.departments -->
+      <div class="mb-2"><label class="form-label">Department</label>
+        <select id="emp-dept" class="form-select"></select>
+      </div>
+
+      <div class="mb-2"><label class="form-label">Hire Date</label><input id="emp-hire" type="date" class="form-control"></div>
+      <button class="btn btn-primary btn-sm me-2" onclick="saveEmployee()">Save</button>
+      <button class="btn btn-secondary btn-sm" onclick="hideEmployeeForm()">Cancel</button>
+    </div>
+  </div>
+</section>
 
   <!-- DEPARTMENTS (admin only) -->
-  <section id="departments-page" class="page">
+<section id="departments-page" class="page">
+  <div class="d-flex justify-content-between align-items-center mb-3">
     <h2>Departments</h2>
-    <p class="text-muted">Admin content — coming in Phase 6</p>
-  </section>
+    <button class="btn btn-success btn-sm" onclick="showDeptForm()">+ Add Department</button>
+  </div>
 
-  <!-- ACCOUNTS (admin only) -->
-  <section id="accounts-page" class="page">
+  <!-- Table showing all departments -->
+  <table class="table table-bordered table-sm">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="depts-tbody"></tbody>
+  </table>
+
+  <!-- Add/Edit form — hidden by default -->
+  <div id="dept-form-wrap" class="card mt-3 d-none" style="max-width:460px">
+    <div class="card-header">Add/Edit Department</div>
+    <div class="card-body">
+      <input type="hidden" id="dept-edit-idx" value="">
+      <div class="mb-2"><label class="form-label">Name</label><input id="dept-name" type="text" class="form-control"></div>
+      <div class="mb-2"><label class="form-label">Description</label><input id="dept-desc" type="text" class="form-control"></div>
+      <button class="btn btn-primary btn-sm me-2" onclick="saveDept()">Save</button>
+      <button class="btn btn-secondary btn-sm" onclick="hideDeptForm()">Cancel</button>
+    </div>
+  </div>
+</section>  
+
+  <!-- ACCOUNTS (admin only)phase 6 -->
+<section id="accounts-page" class="page">
+  <div class="d-flex justify-content-between align-items-center mb-3">
     <h2>Accounts</h2>
-    <p class="text-muted">Admin content — coming in Phase 6</p>
-  </section>
+    <button class="btn btn-success btn-sm" onclick="showAccountForm()">+ Add Account</button>
+  </div>
+
+  <!-- Table showing all accounts -->
+  <table class="table table-bordered table-sm">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Role</th>
+        <th>Verified</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="accounts-tbody"></tbody>
+  </table>
+
+  <!-- Add/Edit form — hidden by default -->
+  <div id="account-form-wrap" class="card mt-3 d-none" style="max-width:520px">
+    <div class="card-header">Add/Edit Account</div>
+    <div class="card-body">
+      <!-- Hidden field to track which account we're editing (-1 means new) -->
+      <input type="hidden" id="acc-edit-idx" value="">
+      <div class="mb-2"><label class="form-label">First Name</label><input id="acc-first" type="text" class="form-control"></div>
+      <div class="mb-2"><label class="form-label">Last Name</label><input id="acc-last" type="text" class="form-control"></div>
+      <div class="mb-2"><label class="form-label">Email</label><input id="acc-email" type="email" class="form-control"></div>
+      <div class="mb-2"><label class="form-label">Password</label><input id="acc-password" type="password" class="form-control" placeholder="Leave blank to keep existing"></div>
+      <div class="mb-2"><label class="form-label">Role</label>
+        <select id="acc-role" class="form-select">
+          <option value="User">User</option>
+          <option value="Admin">Admin</option>
+        </select>
+      </div>
+      <div class="mb-2 form-check">
+        <input id="acc-verified" type="checkbox" class="form-check-input">
+        <label class="form-check-label">Verified</label>
+      </div>
+      <button class="btn btn-primary btn-sm me-2" onclick="saveAccount()">Save</button>
+      <button class="btn btn-secondary btn-sm" onclick="hideAccountForm()">Cancel</button>
+    </div>
+  </div>
+</section>
 
   <!-- REQUESTS -->
   <section id="requests-page" class="page">
