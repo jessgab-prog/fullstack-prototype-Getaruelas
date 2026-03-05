@@ -168,6 +168,12 @@ function doRegister() {
   // Store the email so the verify page knows who to verify
   localStorage.setItem('unverified_email', email);
 
+  // Clear the form after successful registration
+  document.getElementById('reg-first').value    = '';
+  document.getElementById('reg-last').value     = '';
+  document.getElementById('reg-email').value    = '';
+  document.getElementById('reg-password').value = '';
+
   // Send them to the verify page
   navigateTo('#/verify-email');
 }
@@ -246,6 +252,10 @@ function doLogin() {
   // Update the app state and UI
   setAuthState(true, acc);
 
+  // Clear login form
+  document.getElementById('login-email').value    = '';
+  document.getElementById('login-password').value = '';
+
   // Send them to their profile
   navigateTo('#/profile');
 }
@@ -278,14 +288,12 @@ function setAuthState(isAuth, user) {
 }
 // Placeholder so the navbar Logout link doesn't crash yet
 function doLogout() {
+  if (!confirm('Are you sure you want to log out?')) return;
   // Remove the stored token
   localStorage.removeItem('auth_token');
-
   // Reset the UI back to logged-out state
   setAuthState(false);
-
   showToast('Logged out successfully.', 'info');
-
   navigateTo('#/');
 }
 
@@ -390,6 +398,13 @@ function saveEmployee() {
   const matchingAccount = window.db.accounts.find(a => a.email === email);
   if (!matchingAccount) {
     showToast('No account found for that email. Create an account first.', 'danger');
+    return;
+  }
+
+  // Check for duplicate employee ID
+  const existingEmp = window.db.employees.find(e => e.employeeId === empId);
+  if (existingEmp) {
+    showToast('That Employee ID already exists.', 'danger');
     return;
   }
 
@@ -632,7 +647,127 @@ function deleteAccount(idx) {
   showToast('Account deleted.', 'success');
 }
 
-function renderRequests()  { /* Phase 7 */ }
+// ── REQUESTS Phase7
+
+// We store the Bootstrap modal instance here so we can
+// open and close it from JavaScript
+let requestModalInstance = null;
+
+function openRequestModal() {
+  // Clear previous items and add one empty row to start
+  document.getElementById('req-items-container').innerHTML = '';
+  addReqItem();
+
+  // Create the modal instance once, reuse it after
+  if (!requestModalInstance) {
+    requestModalInstance = new bootstrap.Modal(document.getElementById('requestModal'));
+  }
+  requestModalInstance.show();
+}
+
+function addReqItem() {
+  const container = document.getElementById('req-items-container');
+
+  // Create a new item row with a name input, qty input, and remove button
+  const row = document.createElement('div');
+  row.className = 'd-flex gap-2 mb-2 req-item-row';
+  row.innerHTML = `
+    <input type="text" class="form-control req-item-name" placeholder="Item name" />
+    <input type="number" class="form-control req-item-qty" value="1" min="1" style="width:80px" />
+    <button class="btn btn-sm btn-outline-danger" onclick="removeReqItem(this)">×</button>`;
+
+  container.appendChild(row);
+}
+
+function removeReqItem(btn) {
+  // Don't allow removing the last row — must have at least one item
+  const rows = document.querySelectorAll('.req-item-row');
+  if (rows.length > 1) {
+    btn.closest('.req-item-row').remove();
+  } else {
+    showToast('You need at least one item.', 'warning');
+  }
+}
+
+function submitRequest() {
+  if (!currentUser) return;
+
+  const type = document.getElementById('req-type').value;
+
+  // Collect all item rows and build the items array
+  const rows = document.querySelectorAll('.req-item-row');
+  const items = [];
+
+  rows.forEach(row => {
+    const name = row.querySelector('.req-item-name').value.trim();
+    const qty  = parseInt(row.querySelector('.req-item-qty').value) || 1;
+    if (name) items.push({ name, qty });
+  });
+
+  // Must have at least one item with a name
+  if (!items.length) {
+    showToast('Add at least one item.', 'danger');
+    return;
+  }
+
+  // Build the request object and save it
+  window.db.requests.push({
+    id:            Date.now(),
+    type:          type,
+    items:         items,
+    status:        'Pending',         // all new requests start as Pending
+    date:          new Date().toLocaleDateString(),
+    employeeEmail: currentUser.email  // link request to the logged-in user
+  });
+
+  saveToStorage();
+  requestModalInstance.hide();
+  renderRequests();
+  showToast('Request submitted!', 'success');
+}
+
+function renderRequests() {
+  if (!currentUser) return;
+
+  // Only show requests belonging to the current user
+  const myRequests = window.db.requests.filter(
+    r => r.employeeEmail === currentUser.email
+  );
+
+  const noMsg = document.getElementById('no-requests-msg');
+  const table = document.getElementById('requests-table');
+  const tbody = document.getElementById('requests-tbody');
+
+  if (!myRequests.length) {
+    // Show the empty state message, hide the table
+    noMsg.classList.remove('d-none');
+    table.classList.add('d-none');
+    return;
+  }
+
+  // Hide the empty message, show the table
+  noMsg.classList.add('d-none');
+  table.classList.remove('d-none');
+  tbody.innerHTML = '';
+
+  myRequests.forEach(r => {
+    // Pick badge color based on status
+    const badgeClass = r.status === 'Approved' ? 'success'
+                     : r.status === 'Rejected' ? 'danger'
+                     : 'warning';  // Pending
+
+    // Format items as "Laptop x2, Mouse x1"
+    const itemsList = r.items.map(i => `${i.name} x${i.qty}`).join(', ');
+
+    tbody.innerHTML += `
+      <tr>
+        <td>${r.date}</td>
+        <td>${r.type}</td>
+        <td>${itemsList}</td>
+        <td><span class="badge bg-${badgeClass}">${r.status}</span></td>
+      </tr>`;
+  });
+}
 
 function showToast(message, type = 'info') {
   const container = document.getElementById('toast-container');

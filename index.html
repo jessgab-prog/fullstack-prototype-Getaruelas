@@ -15,7 +15,7 @@
   <div id="toast-container"></div>
   <nav class="navbar navbar-dark bg-dark px-3">
 
-    <a class="navbar-brand" href="#/">Full-Stack App (Getaruelas, Jess)</a>
+    <a class="navbar-brand" href="javascript:void(0)" onclick="navigateTo('#/')">Full-Stack App (Getaruelas, Jess)</a>
     <div class="ms-auto d-flex align-items-center gap-2">
       <!-- LOGGED-OUT links: only visible when NOT logged in -->
     <a class="nav-link text-white role-logged-out" href="javascript:void(0)" onclick="navigateTo('#/login')">Login</a>
@@ -226,13 +226,68 @@
   </div>
 </section>
 
-  <!-- REQUESTS -->
-  <section id="requests-page" class="page">
+  <!-- REQUESTS Phase7--> 
+<section id="requests-page" class="page">
+  <div class="d-flex justify-content-between align-items-center mb-3">
     <h2>My Requests</h2>
-    <p class="text-muted">Coming in Phase 7</p>
-  </section>
+    <button class="btn btn-success btn-sm" onclick="openRequestModal()">+ New Request</button>
+  </div>
+
+  <!-- Shown when user has no requests yet -->
+  <div id="no-requests-msg" class="d-none">
+    <p>You have no requests yet.</p>
+    <button class="btn btn-success btn-sm" onclick="openRequestModal()">Create One</button>
+  </div>
+
+  <!-- Requests table — hidden until there are requests -->
+  <table id="requests-table" class="table table-bordered table-sm d-none">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Type</th>
+        <th>Items</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="requests-tbody"></tbody>
+  </table>
+</section>
 
 </main>
+
+  <!-- NEW REQUEST MODAL phase7 -->
+<div class="modal fade" id="requestModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">New Request</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Request type dropdown -->
+        <div class="mb-3">
+          <label class="form-label">Type</label>
+          <select id="req-type" class="form-select">
+            <option>Equipment</option>
+            <option>Leave</option>
+            <option>Resources</option>
+          </select>
+        </div>
+
+        <!-- Dynamic item rows -->
+        <label class="form-label">Items</label>
+        <div id="req-items-container"></div>
+        <button class="btn btn-sm btn-outline-secondary mt-2" onclick="addReqItem()">+ Add Item</button>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="submitRequest()">Submit Request</button>
+      </div>
+    </div>
+  </div>
+</div>
+
   <!-- Bootstrap JS (needed for dropdowns, modals) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
